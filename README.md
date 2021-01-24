@@ -1,2 +1,2 @@
 # github-cli
-cli tool for github
+a cli tool for github
