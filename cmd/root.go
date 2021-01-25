@@ -7,13 +7,18 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var rootCmd = &cobra.Command{
-	Use:   "github-cli",
-	Short: "github-cli is a command line interface for use with multiple github repositories",
-}
+var (
+	user    string
+	rootCmd = &cobra.Command{
+		Use:   "github-cli",
+		Short: "github-cli is a command line interface for use with multiple github repositories",
+	}
+)
 
 func init() {
 	rootCmd.AddCommand(whichCmd)
+	rootCmd.AddCommand(mainCmd)
+
 }
 
 func Execute() {
