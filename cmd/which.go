@@ -6,9 +6,12 @@ import (
 	"fmt"
 	"log"
 	"os/exec"
-	"strings"
 
 	"github.com/spf13/cobra"
+)
+
+const (
+	userNameKey = "user.name"
 )
 
 var (
@@ -27,8 +30,6 @@ var (
 )
 
 func which() error {
-	userName := "user.name"
-
 	cmd := exec.Command("git", "config", "--list", "--local")
 	var out bytes.Buffer
 	cmd.Stdout = &out
@@ -36,10 +37,12 @@ func which() error {
 	if err != nil {
 		log.Fatal(err)
 	}
-	user, err := getValueFromConfigList(out, userName)
+	user, err := getValueFromConfigList(out, userNameKey)
+	flag := "--local"
 	if err != nil || user == "" {
+		flag = "--global"
 		fmt.Println("No user set in local config, checking global user")
-		cmd := exec.Command("git", "config", "--list", "--global")
+		cmd := exec.Command("git", "config", "--list", flag)
 		cmd.Stdout = &out
 		err := cmd.Run()
 		if err != nil {
@@ -47,30 +50,11 @@ func which() error {
 		}
 	}
 
-	user, err = getValueFromConfigList(out, userName)
+	user, err = getValueFromConfigList(out, userNameKey)
 	if err != nil || user == "" {
 		return unknownUserErr
 	}
 
 	fmt.Println("Active user:", user)
 	return nil
-}
-
-// getValueFromConfigList returns the value for a given key
-func getValueFromConfigList(list bytes.Buffer, key string) (string, error) {
-	listStr := list.String()
-	var val string
-	err := fmt.Errorf("unable to get %s from config", key)
-
-	idx := strings.Index(listStr, key)
-	if idx == -1 {
-		return val, err
-	}
-	valLine := strings.Split(listStr[idx:], "\n")[0]
-	if len(valLine) == 0 {
-		return val, err
-	}
-	val = strings.Split(valLine, "=")[1]
-
-	return val, nil
 }
