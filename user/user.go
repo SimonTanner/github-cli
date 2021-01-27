@@ -2,6 +2,7 @@ package user
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -10,7 +11,9 @@ import (
 )
 
 var (
-	userDataFile = "userData.json"
+	userDataFile   = "userData.json"
+	ErrNoUserFound = errors.New("no user profile found")
+	ErrUserExists  = errors.New("profile already exists")
 )
 
 type User struct {
@@ -20,7 +23,7 @@ type User struct {
 
 type Users map[string]User
 
-func SaveUser(name string, user User) (string, User, error) {
+func SaveUser(name string, user User, overwrite bool) (string, User, error) {
 	dataBytes, err := openOrCreateFile()
 	if err != nil {
 		return name, user, err
@@ -33,22 +36,18 @@ func SaveUser(name string, user User) (string, User, error) {
 		return name, user, jsonErr
 	}
 
-	fmt.Println("data length", len(data))
-
-	if len(data) == 0 {
+	if overwrite {
 		data[name] = user
-		// return name, user, nil
+	} else {
+		for u := range data {
+			if u == name {
+				return name, user, ErrUserExists
+			}
+		}
+		data[name] = user
 	}
 
-	// for u, uD := range data {
-	// 	if u == name {
-	// 		return name, user, fmt.Errorf("profile %s already exists, user.name=%s, user.email=%s", name, uD.Name, uD.Email)
-	// 	}
-
-	// 	data[name] = user
-	// }
-
-	fmt.Println("data", data)
+	// fmt.Println("data", data)
 
 	dataWBytes, mErr := json.MarshalIndent(data, "", "    ")
 	if mErr != nil {
@@ -78,7 +77,7 @@ func GetUser(name string) (User, error) {
 	if jsonErr != nil {
 		return user, jsonErr
 	}
-	fmt.Println("user:", users)
+	fmt.Println("user:", fmt.Sprintf("%+v", user))
 
 	for n, uD := range users {
 		if n == name {
@@ -86,7 +85,7 @@ func GetUser(name string) (User, error) {
 		}
 	}
 
-	return user, fmt.Errorf("no user found with profile name %s", name)
+	return user, ErrNoUserFound
 }
 
 func openOrCreateFile() ([]byte, error) {

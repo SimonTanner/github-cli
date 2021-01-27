@@ -3,6 +3,7 @@ package cmd
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -19,11 +20,13 @@ const (
 )
 
 var (
+	add     bool
+	force   bool
 	mainCmd = &cobra.Command{
 		Use:   "main",
-		Short: "set the main git user locally",
+		Short: "set git user to \"main\" locally",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := main(user); err != nil {
+			if err := main(mainUser, add, force); err != nil {
 				return err
 			}
 			return nil
@@ -33,14 +36,16 @@ var (
 )
 
 func init() {
-	mainCmd.Flags().StringVarP(&user, "user", "u", "", "the user you wish to set locally")
-	// mainCmd.MarkFlagRequired("user")
+	mainCmd.Flags().BoolVarP(&add, "add", "a", false, "use to add new user profile details")
+	mainCmd.Flags().BoolVarP(&force, "force", "f", false, "use to overwrite user profile details")
 }
 
-func main(user string) error {
+func main(user string, add, force bool) error {
 	branchCmd := exec.Command("git", "branch")
 	var (
 		outBranch, errBranch bytes.Buffer
+		currentUser          us.User
+		err                  error
 	)
 
 	branchCmd.Stdout = &outBranch
@@ -51,43 +56,68 @@ func main(user string) error {
 		return nil
 	}
 
-	if user == "" {
-		user = mainUser
-		fmt.Println("user is main")
-	}
-
 	fmt.Println("Current branch:", strings.Trim(outBranch.String(), "\n* "))
 
-	u, uErr := us.GetUser(user)
-	// if uErr != nil && uErr == fmt.Errorf("no user found with profile name %s", user) {
-	if uErr != nil {
-		var err error
-		reader := bufio.NewReader(os.Stdin)
-		fmt.Print("Please enter the user name: ")
-		uName, _ := reader.ReadString('\n')
-		fmt.Print("Please enter the email address: ")
-		uEmail, _ := reader.ReadString('\n')
-		newUser := us.User{
-			Name:  uName,
-			Email: uEmail,
-		}
-
-		_, u, err = us.SaveUser(user, newUser)
+	if add && !force {
+		currentUser, err = inputNewUser(user, false)
 		if err != nil {
-			fmt.Println(err)
+			if errors.Is(err, us.ErrUserExists) {
+				fmt.Printf("user profile \"%s\" already exists\n", user)
+				fmt.Println("to overwrite this enter github-cli -a -f")
+				return nil
+			}
+			return err
+		}
+	} else if add && force {
+		currentUser, err = inputNewUser(user, true)
+		if err != nil {
+			return err
+		}
+	} else {
+		currentUser, err = us.GetUser(user)
+		if err != nil {
+			if errors.Is(err, us.ErrNoUserFound) {
+				fmt.Printf("user profile \"%s\" not currently set\n", user)
+				fmt.Println("To add a new user use enter -a")
+				return nil
+			}
+			return err
 		}
 	}
 
-	nameErr := setConfigVar(userNameKey, u.Name)
-	fmt.Printf("setting %s to %s", userNameKey, u.Name)
+	nameErr := setConfigVar(userNameKey, currentUser.Name)
+	fmt.Printf("Setting %s to %s", userNameKey, currentUser.Name)
 	if nameErr != nil {
 		return nameErr
 	}
-	emailErr := setConfigVar(userEmailKey, u.Email)
-	fmt.Printf("setting %s to %s", userEmailKey, u.Email)
+	emailErr := setConfigVar(userEmailKey, currentUser.Email)
+	fmt.Printf("Setting %s to %s", userEmailKey, currentUser.Email)
 	if emailErr != nil {
 		return emailErr
 	}
-	fmt.Println("User successfully set to", user)
+
+	fmt.Println("Git user successfully set to", mainUser)
 	return nil
+}
+
+func inputNewUser(user string, overwrite bool) (us.User, error) {
+	var err error
+	reader := bufio.NewReader(os.Stdin)
+
+	fmt.Print("Please enter the user name: ")
+	uName, _ := reader.ReadString('\n')
+
+	fmt.Print("Please enter the email address: ")
+	uEmail, _ := reader.ReadString('\n')
+
+	newUser := us.User{
+		Name:  uName,
+		Email: uEmail,
+	}
+
+	_, u, err := us.SaveUser(user, newUser, overwrite)
+	if err != nil {
+		return us.User{}, err
+	}
+	return u, nil
 }
