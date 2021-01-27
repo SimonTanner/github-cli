@@ -26,22 +26,31 @@ func SaveUser(name string, user User) (string, User, error) {
 		return name, user, err
 	}
 
-	var data Users
+	data := Users{}
 
 	jsonErr := json.Unmarshal(dataBytes, &data)
 	if jsonErr != nil {
 		return name, user, jsonErr
 	}
 
-	for u, uD := range data {
-		if u == name {
-			return name, user, fmt.Errorf("profile %s already exists, user.name=%s, user.email=%s", name, uD.Name, uD.Email)
-		}
+	fmt.Println("data length", len(data))
 
+	if len(data) == 0 {
 		data[name] = user
+		// return name, user, nil
 	}
 
-	dataWBytes, mErr := json.Marshal(data)
+	// for u, uD := range data {
+	// 	if u == name {
+	// 		return name, user, fmt.Errorf("profile %s already exists, user.name=%s, user.email=%s", name, uD.Name, uD.Email)
+	// 	}
+
+	// 	data[name] = user
+	// }
+
+	fmt.Println("data", data)
+
+	dataWBytes, mErr := json.MarshalIndent(data, "", "    ")
 	if mErr != nil {
 		return name, user, mErr
 	}
@@ -55,13 +64,15 @@ func SaveUser(name string, user User) (string, User, error) {
 }
 
 func GetUser(name string) (User, error) {
+	var (
+		user  User
+		users Users
+	)
+
 	db, err := openOrCreateFile()
-	var user User
 	if err != nil {
 		return user, err
 	}
-
-	var users Users
 
 	jsonErr := json.Unmarshal(db, &users)
 	if jsonErr != nil {

@@ -1,8 +1,10 @@
 package cmd
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 
@@ -13,6 +15,7 @@ import (
 
 const (
 	userEmailKey = "user.email"
+	mainUser     = "main"
 )
 
 var (
@@ -25,12 +28,13 @@ var (
 			}
 			return nil
 		},
+		SilenceUsage: true,
 	}
 )
 
 func init() {
 	mainCmd.Flags().StringVarP(&user, "user", "u", "", "the user you wish to set locally")
-	mainCmd.MarkFlagRequired("user")
+	// mainCmd.MarkFlagRequired("user")
 }
 
 func main(user string) error {
@@ -47,22 +51,43 @@ func main(user string) error {
 		return nil
 	}
 
-	fmt.Println("Current branch:", strings.Trim(outBranch.String(), "/n* "))
+	if user == "" {
+		user = mainUser
+		fmt.Println("user is main")
+	}
+
+	fmt.Println("Current branch:", strings.Trim(outBranch.String(), "\n* "))
 
 	u, uErr := us.GetUser(user)
+	// if uErr != nil && uErr == fmt.Errorf("no user found with profile name %s", user) {
 	if uErr != nil {
-		return fmt.Errorf("error getting user: %w", uErr)
+		var err error
+		reader := bufio.NewReader(os.Stdin)
+		fmt.Print("Please enter the user name: ")
+		uName, _ := reader.ReadString('\n')
+		fmt.Print("Please enter the email address: ")
+		uEmail, _ := reader.ReadString('\n')
+		newUser := us.User{
+			Name:  uName,
+			Email: uEmail,
+		}
+
+		_, u, err = us.SaveUser(user, newUser)
+		if err != nil {
+			fmt.Println(err)
+		}
 	}
 
 	nameErr := setConfigVar(userNameKey, u.Name)
-	fmt.Println(fmt.Sprintf("setting %s to %s", userNameKey, u.Name))
+	fmt.Printf("setting %s to %s", userNameKey, u.Name)
 	if nameErr != nil {
 		return nameErr
 	}
 	emailErr := setConfigVar(userEmailKey, u.Email)
+	fmt.Printf("setting %s to %s", userEmailKey, u.Email)
 	if emailErr != nil {
 		return emailErr
 	}
-	fmt.Println("User set to", user)
+	fmt.Println("User successfully set to", user)
 	return nil
 }
