@@ -7,7 +7,9 @@ import (
 )
 
 var (
-	user    string
+	add     bool
+	force   bool
+	private bool
 	rootCmd = &cobra.Command{
 		Use:   "github-cli",
 		Short: "github-cli is a command line interface for use with multiple github repositories",
@@ -17,11 +19,12 @@ var (
 func init() {
 	rootCmd.AddCommand(whichCmd)
 	rootCmd.AddCommand(mainCmd)
+	rootCmd.AddCommand(workCmd)
+	rootCmd.AddCommand(setCmd)
 }
 
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		// fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }

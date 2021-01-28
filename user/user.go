@@ -5,16 +5,27 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
-
-	"github.com/prometheus/common/log"
+	osUs "os/user"
 )
 
 var (
+	filePath       = getHomePath()
 	userDataFile   = "userData.json"
+	fullPath       = fmt.Sprintf("%s/%s", filePath, userDataFile)
 	ErrNoUserFound = errors.New("no user profile found")
 	ErrUserExists  = errors.New("profile already exists")
 )
+
+func getHomePath() string {
+	osUser, err := osUs.Current()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return osUser.HomeDir
+}
 
 type User struct {
 	Name  string `json:"name"`
@@ -54,7 +65,7 @@ func SaveUser(name string, user User, overwrite bool) (string, User, error) {
 		return name, user, mErr
 	}
 
-	err = ioutil.WriteFile(userDataFile, dataWBytes, 0644)
+	err = ioutil.WriteFile(fullPath, dataWBytes, 0644)
 	if err != nil {
 		return name, user, mErr
 	}
@@ -77,7 +88,6 @@ func GetUser(name string) (User, error) {
 	if jsonErr != nil {
 		return user, jsonErr
 	}
-	fmt.Println("user:", fmt.Sprintf("%+v", user))
 
 	for n, uD := range users {
 		if n == name {
@@ -90,34 +100,29 @@ func GetUser(name string) (User, error) {
 
 func openOrCreateFile() ([]byte, error) {
 	var dataBytes []byte
-	_, err := os.Stat(userDataFile)
-	// fmt.Println(fInf)
+	_, err := os.Stat(fullPath)
 
 	if err != nil {
-		fmt.Println(err)
-		var fileErr error
-		_, fileErr = os.Create(userDataFile)
+		file, fileErr := os.Create(fullPath)
 		if fileErr != nil {
-			log.Errorf("error creating file: %w", fileErr)
+			// log.Error("error creating file: %w", fileErr)
 			return dataBytes, fileErr
 		}
+		defer file.Close()
 
 		users := Users{}
 		usersBytes, jsonErr := json.Marshal(users)
 		if jsonErr != nil {
-			fmt.Println("J BALLS")
 			return nil, jsonErr
 		}
-		wErr := ioutil.WriteFile(userDataFile, usersBytes, 0644)
+		wErr := ioutil.WriteFile(fullPath, usersBytes, 0644)
 		if wErr != nil {
-			fmt.Println("W BALLS")
 			return nil, wErr
 		}
 	}
 
-	dataBytes, err = ioutil.ReadFile(userDataFile)
+	dataBytes, err = ioutil.ReadFile(fullPath)
 	if err != nil {
-		fmt.Println("BALLS")
 		return dataBytes, err
 	}
 	return dataBytes, nil
