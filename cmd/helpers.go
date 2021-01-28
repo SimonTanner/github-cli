@@ -123,12 +123,21 @@ func setUser(user us.User, output bool) error {
 func inputNewUser(user string, overwrite bool) (us.User, error) {
 	var err error
 	reader := bufio.NewReader(os.Stdin)
+	delim := byte('\n')
 
 	fmt.Print("Please enter the user name: ")
-	uName, _ := reader.ReadString('\n')
+	uName, err := reader.ReadString(delim)
+	if err != nil {
+		return us.User{}, err
+	}
+	uName = strings.ReplaceAll(uName, string(delim), "")
 
 	fmt.Print("Please enter the email address: ")
-	uEmail, _ := reader.ReadString('\n')
+	uEmail, err := reader.ReadString(delim)
+	if err != nil {
+		return us.User{}, err
+	}
+	uEmail = strings.ReplaceAll(uEmail, string(delim), "")
 
 	newUser := us.User{
 		Name:  uName,
