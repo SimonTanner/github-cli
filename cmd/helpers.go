@@ -106,7 +106,7 @@ func setUser(user us.User, output bool) error {
 		return nameErr
 	}
 	if output {
-		fmt.Printf("%s set to %s", userNameKey, user.Name)
+		fmt.Printf("%s set to %s, ", userNameKey, user.Name)
 	}
 
 	emailErr := setConfigVar(userEmailKey, user.Email)
@@ -114,7 +114,7 @@ func setUser(user us.User, output bool) error {
 		return emailErr
 	}
 	if output {
-		fmt.Printf("%s set to %s", userEmailKey, user.Email)
+		fmt.Printf("%s set to %s\n", userEmailKey, user.Email)
 	}
 
 	return nil

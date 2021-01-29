@@ -12,7 +12,7 @@ import (
 
 var (
 	filePath       = getHomePath()
-	userDataFile   = "userData.json"
+	userDataFile   = ".userData.json"
 	fullPath       = fmt.Sprintf("%s/%s", filePath, userDataFile)
 	ErrNoUserFound = errors.New("no user profile found")
 	ErrUserExists  = errors.New("profile already exists")
