@@ -83,7 +83,7 @@ func set(private bool) error {
 		return ErrRepoCreationFailed
 	}
 
-	fmt.Printf("%s repository successfully created, http response status code: %d", repoName, statusCode)
+	fmt.Printf("%s repository successfully created, http response status code: %d\n", repoName, statusCode)
 
 	err = setRepoRemote(newRepo)
 	if err != nil {
