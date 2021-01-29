@@ -59,8 +59,6 @@ func SaveUser(name string, user User, overwrite bool) (string, User, error) {
 		users[name] = user
 	}
 
-	// fmt.Println("data", data)
-
 	dataWBytes, mErr := json.MarshalIndent(users, "", "    ")
 	if mErr != nil {
 		return name, user, mErr

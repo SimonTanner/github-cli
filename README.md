@@ -52,3 +52,24 @@ If you're not in a git repository you will see the following output:
 
 If you run this again iy will show that these details have already been set. To overwrite these simply enter `github-cli main -a -f` and you can re-enter these details.
 
+### work
+
+Is similar to `main` in functionality and the same commands apply. This allows you to store you work github user profile and set it locally to this.
+
+### set
+
+The `set` command initialises a git repository in the current folder with the name as the current folder name.
+Adding the `-p` or `--private` flag will create a private repository, the default is public. The 1st time you run it will output:
+
+    No access token for profile "main"
+    please enter your github access token:
+
+Here you can enter the access token, which will then attempt to create the repository on github.com and set the remote to this. It will also return the status code if successful or return an error if not. In order to create a token log in to github and navigate to the settings page, then select the "Developer settings" page. Here select "Personal access tokens" and click "Generate new token". Simply add a note e.g. "github-cli" and click the repo tick box to allow "Full control of private repositories". The click "Generate token" and copy this into the github-cli prompt (this will store it within you profile). It will then be able to create your repository on github.
+
+Example of successful creation output:
+
+    github-cli set
+    Current Directory: /Users/ITST/hello
+    hello repository successfully created, http response status code: 201
+    Successfully set remote url
+
