@@ -58,11 +58,13 @@ func setUserProfile(user string, add, force bool) error {
 	branchCmd.Stderr = &errBranch
 	branchErr := branchCmd.Run()
 	if branchErr != nil {
-		fmt.Println("Not a git repository. If you wish to initialise a repository try \"github-cli set [private]\"")
-		return nil
+		if !add {
+			fmt.Println("Not a git repository. If you wish to initialise a repository try \"github-cli set [private]\"")
+			return nil
+		}
+	} else {
+		fmt.Println("Current branch:", strings.Trim(outBranch.String(), "\n* "))
 	}
-
-	fmt.Println("Current branch:", strings.Trim(outBranch.String(), "\n* "))
 
 	if add && !force {
 		currentUser, err = inputNewUser(user, false)
