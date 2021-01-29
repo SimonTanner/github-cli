@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 )
 
@@ -11,7 +13,7 @@ const (
 var (
 	workCmd = &cobra.Command{
 		Use:   "work",
-		Short: "set git user to \"main\" locally",
+		Short: fmt.Sprintf("set git user to \"%s\" locally", workUser),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := work(workUser, add, force); err != nil {
 				return err

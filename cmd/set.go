@@ -23,7 +23,7 @@ import (
 var (
 	setCmd = &cobra.Command{
 		Use:   "set",
-		Short: "initialises a github repository locally and makes it private if [private] flag set",
+		Short: fmt.Sprintf("initialises a github repository locally, using \"%s\" profile and makes it private if [private] flag passed", mainUser),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := set(private); err != nil {
 				return err
@@ -38,7 +38,7 @@ var (
 )
 
 func init() {
-	setCmd.Flags().BoolVarP(&private, "private", "p", false, "use to make repository private")
+	setCmd.Flags().BoolVarP(&private, "private", "p", false, "flag to make repository private")
 }
 
 func set(private bool) error {
