@@ -28,8 +28,9 @@ func getHomePath() string {
 }
 
 type User struct {
-	Name  string `json:"name"`
-	Email string `json:"email"`
+	Name        string `json:"name"`
+	Email       string `json:"email"`
+	AccessToken string `json:"accessToken"`
 }
 
 type Users map[string]User
@@ -40,27 +41,27 @@ func SaveUser(name string, user User, overwrite bool) (string, User, error) {
 		return name, user, err
 	}
 
-	data := Users{}
+	users := Users{}
 
-	jsonErr := json.Unmarshal(dataBytes, &data)
+	jsonErr := json.Unmarshal(dataBytes, &users)
 	if jsonErr != nil {
 		return name, user, jsonErr
 	}
 
 	if overwrite {
-		data[name] = user
+		users[name] = user
 	} else {
-		for u := range data {
+		for u := range users {
 			if u == name {
 				return name, user, ErrUserExists
 			}
 		}
-		data[name] = user
+		users[name] = user
 	}
 
 	// fmt.Println("data", data)
 
-	dataWBytes, mErr := json.MarshalIndent(data, "", "    ")
+	dataWBytes, mErr := json.MarshalIndent(users, "", "    ")
 	if mErr != nil {
 		return name, user, mErr
 	}

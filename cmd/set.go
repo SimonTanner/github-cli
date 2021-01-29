@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -12,6 +13,7 @@ import (
 	"strings"
 
 	us "github.com/SimonTanner/github-cli/user"
+	"gopkg.in/square/go-jose.v2/json"
 
 	"github.com/google/go-github/v33/github"
 	"github.com/spf13/cobra"
@@ -59,15 +61,20 @@ func set(private bool) error {
 		return err
 	}
 
-	currDir, err := os.Getwd()
+	if user.AccessToken == "" {
+		fmt.Printf("No access token for profile \"%s\"\n", mainUser)
+		user, err = inputAccessToken(mainUser, user)
+		if err != nil {
+			return err
+		}
+	}
+
+	repoName, err := getRepoName()
 	if err != nil {
 		return err
 	}
-	fmt.Println("Current Directory:", currDir)
-	dirSlice := strings.Split(currDir, "/")
-	repoName := dirSlice[len(dirSlice)-1]
 
-	newRepo, statusCode, err := createRemoteRepo(repoName, private)
+	newRepo, statusCode, err := createRemoteRepo(repoName, user, private)
 	if err != nil {
 		return err
 	}
@@ -75,17 +82,18 @@ func set(private bool) error {
 	if newRepo == nil {
 		return ErrRepoCreationFailed
 	}
+
 	fmt.Printf("%s repository successfully created, http response status code: %d", repoName, statusCode)
 	fmt.Printf("\n%+v", *newRepo)
 
 	return nil
 }
 
-func createRemoteRepo(name string, private bool) (*github.Repository, int, error) {
+func createRemoteRepo(name string, user us.User, private bool) (*github.Repository, int, error) {
 	ctx := context.Background()
 	st := oauth2.StaticTokenSource(
 		&oauth2.Token{
-			AccessToken: "5f4a6a26baf2c8a2c8af1a69970a24ab0af77de5",
+			AccessToken: user.AccessToken,
 		},
 	)
 
@@ -108,5 +116,25 @@ func createRemoteRepo(name string, private bool) (*github.Repository, int, error
 		return newRepo, resp.StatusCode, fmt.Errorf("error creating repository, server returned status code: %d", resp.StatusCode)
 	}
 
+	data, mErr := json.MarshalIndent(*newRepo, "", "    ")
+	if mErr != nil {
+		return newRepo, resp.StatusCode, mErr
+	}
+
+	err = ioutil.WriteFile("repo.json", data, 0644)
+	if err != nil {
+		return newRepo, resp.StatusCode, err
+	}
+
 	return newRepo, resp.StatusCode, nil
+}
+
+func getRepoName() (string, error) {
+	currDir, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+	fmt.Println("Current Directory:", currDir)
+	dirSlice := strings.Split(currDir, "/")
+	return dirSlice[len(dirSlice)-1], nil
 }

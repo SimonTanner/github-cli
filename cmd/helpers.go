@@ -150,3 +150,22 @@ func inputNewUser(user string, overwrite bool) (us.User, error) {
 	}
 	return u, nil
 }
+
+func inputAccessToken(profile string, user us.User) (us.User, error) {
+	var err error
+	reader := bufio.NewReader(os.Stdin)
+	delim := byte('\n')
+
+	fmt.Print("please enter your github access token: ")
+	token, err := reader.ReadString(delim)
+	if err != nil {
+		return us.User{}, err
+	}
+	user.AccessToken = strings.ReplaceAll(token, string(delim), "")
+	_, u, err := us.SaveUser(profile, user, true)
+	if err != nil {
+		return us.User{}, err
+	}
+
+	return u, nil
+}
