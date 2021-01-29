@@ -34,6 +34,7 @@ var (
 	}
 
 	ErrRepoCreationFailed = errors.New("failed to create remote repository")
+	ErrNoRepositoryURL    = errors.New("no url for remote repository")
 )
 
 func init() {
@@ -47,7 +48,6 @@ func set(private bool) error {
 	cmd.Stdout = &out
 	cmdErr := cmd.Run()
 	if cmdErr != nil {
-		fmt.Println("Bugger")
 		log.Fatal(cmdErr)
 		return cmdErr
 	}
@@ -84,7 +84,11 @@ func set(private bool) error {
 	}
 
 	fmt.Printf("%s repository successfully created, http response status code: %d", repoName, statusCode)
-	fmt.Printf("\n%+v", *newRepo)
+
+	err = setRepoRemote(newRepo)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -127,6 +131,27 @@ func createRemoteRepo(name string, user us.User, private bool) (*github.Reposito
 	}
 
 	return newRepo, resp.StatusCode, nil
+}
+
+func setRepoRemote(repo *github.Repository) error {
+	URLptr := repo.URL
+	if URLptr == nil {
+		return ErrNoRepositoryURL
+	}
+	URL := *URLptr
+	cmd := exec.Command("git", "remote", "add", "origin", URL)
+
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	cmdErr := cmd.Run()
+	if cmdErr != nil {
+		log.Fatal(cmdErr)
+		return cmdErr
+	}
+
+	fmt.Println("Successfully set remote url")
+
+	return nil
 }
 
 func getRepoName() (string, error) {
